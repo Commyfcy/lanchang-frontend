@@ -1,6 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { Navbarow } from "../owner/Navbarowcomponent/navbarow/index-ow";
+import { Link } from 'react-router-dom';
+import {
+  Dialog,
+  TextField,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  Input
+} from '@mui/material';
 import './association.css';
+
+
+function AddMenuButton({ text, linkTo }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'End', padding: '10px' }}>
+      <Button
+        variant="contained"
+        component={Link}
+        to={linkTo}
+        style={{ width: '300px' }}
+      >
+        {text}
+      </Button>
+    </div>
+  );
+}
 
 class Apriori {
   constructor(transactions, minSupport = 0.2, minConfidence = 0.5, lift = 0) {
@@ -225,6 +253,8 @@ const Association = () => {
   return (
     <div>
       <Navbarow />
+      <AddMenuButton  text="Promotion" linkTo="/promotion" /> 
+
       <div className="container">
         <div className="title">
           <h1>วิเคราะห์ความสัมพันธ์รายการอาหาร</h1>
