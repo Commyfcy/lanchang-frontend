@@ -112,11 +112,7 @@ const OrderDisplay = () => {
   const [promptpayImageUrl, setPromptpayImageUrl] = useState('');
   const [promotions, setPromotions] = useState([]);
 
-const navigate = useNavigate();
-  const HandleupdateOrder = () => {
 
-    navigate('/updateServedOrder');
-  }
 
   useEffect(() => {
     if (paymentMethod === 'promptpay') {
@@ -674,15 +670,10 @@ const getItemDetails = (orderDetail) => {
     <div style={styles.orderPage}>
       <Navbarow />
       <AddMenuButton  text="Promotion" linkTo="/promotion" /> 
-            <button
-          style={buttonStyle}
-          onClick={HandleupdateOrder}
-        >
-          อัปเดตรายการอาหารลูกค้า
-        </button>
+     
       <div style={styles.orderContainer}>
       
-        <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>ชำรdfcะเงิน</h1>
+        <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>ชำระเงิน</h1>
         
         {orders.length === 0 ? (
           <h2 style={{ textAlign: 'center' }}>ไม่มีรายการชำระ</h2>
@@ -793,20 +784,6 @@ const getItemDetails = (orderDetail) => {
           onClose={handleClosePayment}
         />
       )}
-          <div style={{
-        justifyContent:'center',
-        paddingTop: '10px',
-        paddingBottom:'30px',
-        display: 'flex',
-        margin:'0 10%'
-      }}>
-        <button
-          style={buttonStyle}
-          onClick={HandleupdateOrder}
-        >
-          อัปเดตรายการอาหารลูกค้า
-        </button>
-      </div>
     </div>
   );
 };
