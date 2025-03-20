@@ -112,7 +112,8 @@ const OrderDisplay = () => {
   const [promptpayImageUrl, setPromptpayImageUrl] = useState('');
   const [promotions, setPromotions] = useState([]);
 
-
+const navigate = useNavigate();
+  const HandleupdateOrder = () => {
 
   useEffect(() => {
     if (paymentMethod === 'promptpay') {
@@ -783,6 +784,20 @@ const getItemDetails = (orderDetail) => {
           onClose={handleClosePayment}
         />
       )}
+          <div style={{
+        justifyContent:'center',
+        paddingTop: '10px',
+        paddingBottom:'30px',
+        display: 'flex',
+        margin:'0 10%'
+      }}>
+        <button
+          style={buttonStyle}
+          onClick={HandleupdateOrder}
+        >
+          อัปเดตรายการอาหารลูกค้า
+        </button>
+      </div>
     </div>
   );
 };
