@@ -682,7 +682,7 @@ const getItemDetails = (orderDetail) => {
         </button>
       <div style={styles.orderContainer}>
       
-        <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>ชำระเงิน</h1>
+        <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>ชำรdfcะเงิน</h1>
         
         {orders.length === 0 ? (
           <h2 style={{ textAlign: 'center' }}>ไม่มีรายการชำระ</h2>
