@@ -674,6 +674,12 @@ const getItemDetails = (orderDetail) => {
     <div style={styles.orderPage}>
       <Navbarow />
       <AddMenuButton  text="Promotion" linkTo="/promotion" /> 
+            <button
+          style={buttonStyle}
+          onClick={HandleupdateOrder}
+        >
+          อัปเดตรายการอาหารลูกค้า
+        </button>
       <div style={styles.orderContainer}>
       
         <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>ชำระเงิน</h1>
