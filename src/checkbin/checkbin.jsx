@@ -115,6 +115,9 @@ const OrderDisplay = () => {
 const navigate = useNavigate();
   const HandleupdateOrder = () => {
 
+    navigate('/updateServedOrder');
+  }
+
   useEffect(() => {
     if (paymentMethod === 'promptpay') {
       setPromptpayImageUrl('/images/promptpay.jpg');
