@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-//import Promtpay from './promptpay.jpg';
 import { Navbarow } from '../owner/Navbarowcomponent/navbarow/index-ow';
-import { Link } from 'react-router-dom';
+
+import { useNavigate } from 'react-router-dom';
+
 import {
   Dialog,
   TextField,
@@ -14,8 +15,11 @@ import {
   Input
 } from '@mui/material';
 
+
 const styles = {
-  
+  orderPage: {
+    padding: '1rem',
+  },
   orderContainer: {
     maxWidth: '800px',
     margin: '0 auto',
@@ -73,20 +77,20 @@ const styles = {
   },
 };
 
-function AddMenuButton({ text, linkTo }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'End', padding: '10px' }}>
-      <Button
-        variant="contained"
-        component={Link}
-        to={linkTo}
-        style={{ width: '300px' }}
-      >
-        {text}
-      </Button>
-    </div>
-  );
-}
+const buttonStyle = {
+  padding: '0.5rem 1.25rem',
+  color: 'white',
+  fontWeight: '500',
+  border: 'none',
+  transitionDuration: '200ms',
+  width: '70%',
+  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+  cursor: 'pointer',
+  fontSize: '15px',
+  backgroundColor: '#3b82f6',
+  display:'flex',
+  justifyContent:'center'
+};
 
 //////////////////////////////////////////////////////////
 
@@ -109,20 +113,24 @@ const OrderDisplay = () => {
   const [changeAmount, setChangeAmount] = useState(0);
   const [checkedItems, setCheckedItems] = useState({});
   const [selectAll, setSelectAll] = useState(false);
-  const [promptpayImageUrl, setPromptpayImageUrl] = useState('');
-  const [promotions, setPromotions] = useState([]);
 
+  const navigate = useNavigate();
+  const HandleupdateOrder = () => {
 
+    navigate('/updateServedOrder');
+  }
 
-  useEffect(() => {
-    if (paymentMethod === 'promptpay') {
-      setPromptpayImageUrl('/images/promptpay.jpg');
-    }
-  }, [paymentMethod]);
-  
+  const calculateSelectedTotal = (orderId) => {
+    const order = orders.find(o => o.Order_id === orderId);
+    if (!order) return 0;
 
- 
-
+    return order.details.reduce((total, item) => {
+      if (checkedItems[orderId]?.[item.Order_detail_id]) {
+        return total + (item.Order_detail_price * item.Order_detail_quantity);
+      }
+      return total;
+    }, 0);
+  };
 
   const handleCheckboxChange = (orderId, itemId) => {
     setCheckedItems(prev => ({
@@ -170,16 +178,7 @@ const OrderDisplay = () => {
     const order = orders.find(o => o.Order_id === orderId);
     return order.details.reduce((total, item) => {
       if (checkedItems[orderId]?.[item.Order_detail_id]) {
-        const promotion = checkPromotion(item);
-        let itemPrice = item.Order_detail_price * item.Order_detail_quantity;
-        
-        // Apply discount if there's a promotion
-        if (promotion) {
-          // Apply discount as percentage
-          itemPrice = itemPrice - (promotion.discountValue);
-        }
-        
-        return total + itemPrice;
+        return total + (item.Order_detail_price * item.Order_detail_quantity);
       }
       return total;
     }, 0);
@@ -189,7 +188,6 @@ const OrderDisplay = () => {
     fetchOrders();
     fetchMenus();
     fetchAllData();
-    fetchPromotions(); 
   }, []);
 
   const fetchOrders = async () => {
@@ -197,17 +195,18 @@ const OrderDisplay = () => {
       const response = await fetch('http://localhost:3333/getserveoder');
       if (response.ok) {
         const data = await response.json();
+        console.log(data);
         const ordersWithDetails = await Promise.all(data.map(async (order) => {
           const detailsResponse = await fetch(`http://localhost:3333/getorderdetail/${order.Order_id}`);
           const details = await detailsResponse.json();
           console.log(details);
-          setNoodleMenu(details.filter(item => item.status_id === 5) );
+          setNoodleMenu(details.filter(item => item.status_id === 5));
           return { ...order, details: details.filter(item => item.status_id === 5) };
-          
+
         }));
         const sortedOrders = ordersWithDetails
-          .filter(order => order.details.length > 0) 
-          .sort((a, b) => new Date(a.Order_datetime ) - new Date(b.Order_datetime));
+          .filter(order => order.details.length > 0)
+          .sort((a, b) => new Date(a.Order_datetime) - new Date(b.Order_datetime));
         setOrders(sortedOrders);
       } else {
         console.error('Failed to fetch  orders');
@@ -219,11 +218,11 @@ const OrderDisplay = () => {
 
   const fetchMenus = async () => {
     try {
-      const otherRes = await 
+      const otherRes = await
         fetch('http://localhost:3333/getmenu');
       const otherData = await (otherRes.json());
       setOtherMenu(otherData);
-      console.log('Other Menu:', otherData);    
+      console.log('Other Menu:', otherData);
     } catch (error) {
       console.error('Error fetching menus:', error);
     }
@@ -249,62 +248,10 @@ const OrderDisplay = () => {
       setSizes(sizeData);
       setMeats(meatData);
       setNoodleTypes(noodleTypeData);
-      
+
     } catch (error) {
       console.error('Error fetching data:', error);
     }
-  };
-
-  const fetchPromotions = async () => {
-    try {
-      
-      const promotionsRes = await fetch('http://localhost:3333/getactivepromotions');
-      const promotionsData = await promotionsRes.json();
-      
-      
-      const promotionsWithItems = await Promise.all(promotionsData.map(async (promo) => {
-        const itemsRes = await fetch(`http://localhost:3333/getpromotionitems/${promo.Promotion_id}`);
-        const items = await itemsRes.json();
-        return { ...promo, items };
-      }));
-      
-      setPromotions(promotionsWithItems);
-    } catch (error) {
-      console.error('Error fetching promotions:', error);
-    }
-  };
-  
-  const checkPromotion = (item) => {
-    const now = new Date();
-    
-    for (const promo of promotions) {
-      const startDate = new Date(promo.Start_date);
-      const endDate = new Date(promo.End_date);
-      
-      if (now >= startDate && now <= endDate) {
-        const matchesPromotion = promo.items.some(promoItem => {
-          if (item.Menu_id && promoItem.Menu_id === item.Menu_id) {
-            return true;
-          }
-          
-          if (promoItem.Noodlemenu && item.Noodle_type_id) {
-            return true;
-          }
-          
-          return false;
-        });
-        
-        if (matchesPromotion) {
-          return {
-            promotionId: promo.Promotion_id,
-            promotionName: promo.Promotion_name,
-            discountValue: promo.Discount_value
-          };
-        }
-      }
-    }
-    
-    return null; // No applicable promotion
   };
 
   const getNoodleTypeName = (id) => {
@@ -329,40 +276,73 @@ const OrderDisplay = () => {
 
   function getMenuName(orderDetail) {
     if (!orderDetail) return 'ไม่ระบุ';
-    
+
     const noodle_type_name = getNoodleTypeName(orderDetail.Noodle_type_id);
     const soup_name = getSoupName(orderDetail.Soup_id);
     const meat_name = getMeatName(orderDetail.Meat_id);
     const size_name = getSizeName(orderDetail.Size_id);
-    
-    return `${noodle_type_name} ${soup_name} ${meat_name} (${size_name})`;
-}
 
-const getItemDetails = (orderDetail) => {
+    return `${noodle_type_name} ${soup_name} ${meat_name} (${size_name})`;
+  }
+
+  const getItemDetails = (orderDetail) => {
     if (orderDetail) {
-        // If the order includes a custom noodle dish
-        if (orderDetail.Noodle_type_id || orderDetail.Soup_id || orderDetail.Meat_id || orderDetail.Size_id) {
-            return {
-                name: getMenuName(orderDetail),
-                price: orderDetail.Price || 0, // Assuming price is stored in order_detail
-            };
-        } 
-        // If the order is from the standard menu
-        else if (orderDetail.Menu_id && Array.isArray(otherMenu)) {
-            const other = otherMenu.find(o => o.Menu_id === orderDetail.Menu_id);
-            return other ? {
-                name: other.Menu_name,
-                price: orderDetail.Price || other.Menu_price,
-            } : null;
-        }
+      // If the order includes a custom noodle dish
+      if (orderDetail.Noodle_type_id || orderDetail.Soup_id || orderDetail.Meat_id || orderDetail.Size_id) {
+        return {
+          name: getMenuName(orderDetail),
+          price: orderDetail.Price || 0, // Assuming price is stored in order_detail
+        };
+      }
+      // If the order is from the standard menu
+      else if (orderDetail.Menu_id && Array.isArray(otherMenu)) {
+        const other = otherMenu.find(o => o.Menu_id === orderDetail.Menu_id);
+        return other ? {
+          name: other.Menu_name,
+          price: orderDetail.Price || other.Menu_price,
+        } : null;
+      }
     }
     return null;
-};
+  };
 
   //ปุ่มชำระเงินเเต่ละรายการ
 
- 
+  const confirmUpdate = async () => {
+    try {
+      const currentOrder = orders.find(order =>
+        order.details.some(item => item.Order_detail_id === updatingItemId)
+      );
 
+      if (!checkedItems[currentOrder.Order_id]?.[updatingItemId]) {
+        alert('กรุณาเลือกรายการที่ต้องการชำระเงิน');
+        return;
+      }
+      const response = await fetch(`http://localhost:3333/updateorderstatus/${updatingItemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: `6` }),
+      });
+
+      if (response.ok) {
+        setOrders(prevOrders =>
+          prevOrders.map(order => ({
+            ...order,
+            details: order.details.filter(item => item.Order_detail_id !== updatingItemId)
+          })).filter(order => order.details.length > 0)
+        );
+        setOpenDialog(false);
+        alert('อัปเดตสถานะเรียบร้อยแล้ว');
+      } else {
+        throw new Error('Failed to update order status');
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      alert('เกิดข้อผิดพลาดในการอัปเดตสถานะ');
+    }
+  };
   const handlePayment = (orderId) => {
     setPayingOrderId(orderId);
     setOpenPaymentDialog(true);
@@ -499,7 +479,7 @@ const getItemDetails = (orderDetail) => {
     }
 
     // คำนวณยอดรวมของรายการที่เลือก
-    const total = calculateCheckedItemsTotal(orderId);
+    const total = calculateSelectedTotal(orderId);
 
     if (total === 0) {
       alert('กรุณาเลือกรายการที่ต้องการชำระเงิน');
@@ -519,17 +499,13 @@ const getItemDetails = (orderDetail) => {
 
   const renderPaymentDetails = () => {
     if (!showPaymentDetails) return null;
-  
+
     const currentOrderId = updatingItemId ?
       orders.find(order => order.details.some(item => item.Order_detail_id === updatingItemId))?.Order_id :
       payingOrderId;
-  
-    const total = calculateCheckedItemsTotal(currentOrderId);
-  
-    // Define the path to your image using process.env.PUBLIC_URL
-    // This assumes you have copied the image to the public folder
-    const promptpayImagePath = process.env.PUBLIC_URL + '/images/promptpay.jpg';
-  
+
+    const total = calculateSelectedTotal(currentOrderId);
+
     return (
       <div style={{ marginTop: '1rem', border: '1px solid #ddd', padding: '1rem', borderRadius: '0.25rem' }}>
         {paymentMethod === 'cash' && (
@@ -559,29 +535,7 @@ const getItemDetails = (orderDetail) => {
             </button>
           </>
         )}
-        
-        {paymentMethod === 'promptpay' && (
-          <>
-            <h3>รายละเอียดการชำระเงิน</h3>
-            <p>ยอดรวมที่ต้องชำระ: {total.toFixed(2)} บาท</p>
-            <div style={{ textAlign: 'center', margin: '1rem 0' }}>
-              {/* Option 2: Use the public URL path */}
-              <img 
-                src={promptpayImagePath} 
-                alt="PromptPay QR Code" 
-                style={{ maxWidth: '100%', height: 'auto', maxHeight: '300px' }} 
-                onError={(e) => {
-                  console.error('Error loading PromptPay image');
-                  e.target.src = 'https://via.placeholder.com/300x300?text=PromptPay+QR+Code';
-                }}
-              />
-              <p style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
-                สแกน QR Code เพื่อชำระเงิน
-              </p>
-            </div>
-          </>
-        )}
-        
+
         {showChange && (
           <Dialog open={showChange} onClose={() => setShowChange(false)}>
             <DialogTitle>เงินทอน</DialogTitle>
@@ -593,6 +547,7 @@ const getItemDetails = (orderDetail) => {
             <DialogActions>
               <Button onClick={() => {
                 setShowChange(false);
+
               }}>
                 ตกลง
               </Button>
@@ -609,7 +564,7 @@ const getItemDetails = (orderDetail) => {
         <h2>เลือกวิธีการชำระเงิน</h2>
         <div style={{ marginBottom: '1rem' }}>
           <p style={{ fontWeight: 'bold' }}>
-            ยอดรวมที่ต้องชำระ: {calculateCheckedItemsTotal(payingOrderId).toFixed(2)} บาท
+            ยอดรวมที่ต้องชำระ: {calculateSelectedTotal(payingOrderId).toFixed(2)} บาท
           </p>
         </div>
         <button
@@ -664,17 +619,11 @@ const getItemDetails = (orderDetail) => {
   );
 
 
-
-
   return (
-    <div style={styles.orderPage}>
+    <div>
       <Navbarow />
-      <AddMenuButton  text="Promotion" linkTo="/promotion" /> 
-     
       <div style={styles.orderContainer}>
-      
         <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>ชำระเงิน</h1>
-        
         {orders.length === 0 ? (
           <h2 style={{ textAlign: 'center' }}>ไม่มีรายการชำระ</h2>
         ) : (
@@ -698,7 +647,6 @@ const getItemDetails = (orderDetail) => {
 
                 {order.details.map((item) => {
                   const itemDetails = getItemDetails(item);
-                  const promotion = checkPromotion(item);
                   return itemDetails ? (
                     <li key={item.Order_detail_id} style={{
                       display: 'flex',
@@ -719,39 +667,25 @@ const getItemDetails = (orderDetail) => {
                             onChange={() => handleCheckboxChange(order.Order_id, item.Order_detail_id)}
                           />
                         }
-                        
+
                       />
-                       {promotion && (
-        <div style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
-          backgroundColor: '#ff4081',
-          color: 'white',
-          padding: '3px 8px',
-          borderRadius: '12px',
-          fontSize: '0.8rem'
-        }}>
-          {promotion.promotionName}: ลด {promotion.discountValue} บาท
-        </div>
-      )}
                       <div>
                         <strong style={{ margin: "10px", fontSize: '1.3rem', marginBottom: '1rem' }}>{itemDetails.name}</strong>
                         <div style={{ margin: "10px", fontSize: '1rem' }}>
                           <div >
                             <strong>{item.Order_detail_quantity} รายการ </strong>
                           </div>
-                          <div style={{margin:"5px 0px"}}>
+                          <div style={{ margin: "5px 0px" }}>
                             {item.Order_detail_price * item.Order_detail_quantity} บาท
                           </div>
-                          <div style={{margin:"5px 0px",color:'gray'}}>
+                          <div style={{ margin: "5px 0px", color: 'gray' }}>
                             {item.Order_detail_additional && (
                               <>
                                 <span>เพิ่มเติม : {item.Order_detail_additional}</span>
                               </>
                             )}
                           </div>
-                          <div style={{color:item.Order_detail_takehome ? "darkred" :"darkgreen"}}>
+                          <div style={{ color: item.Order_detail_takehome ? "darkred" : "darkgreen" }}>
                             {(item.Order_detail_takehome) === 1 ? 'รับกลับบ้าน' : 'ทานที่ร้าน'}
                           </div>
                         </div>
@@ -778,13 +712,30 @@ const getItemDetails = (orderDetail) => {
 
 
 
-      {openPaymentDialog && (
-        <PaymentDialog
-          open={openPaymentDialog}
-          onClose={handleClosePayment}
-        />
-      )}
-    </div>
+      {
+        openPaymentDialog && (
+          <PaymentDialog
+            open={openPaymentDialog}
+            onClose={handleClosePayment}
+          />
+        )
+      }
+      <div style={{
+        justifyContent:'center',
+        paddingTop: '10px',
+        paddingBottom:'30px',
+        display: 'flex',
+        margin:'0 10%'
+      }}>
+        <button
+          style={buttonStyle}
+          onClick={HandleupdateOrder}
+        >
+          อัปเดตรายการอาหารลูกค้า
+        </button>
+      </div>
+      
+    </div >
   );
 };
 
